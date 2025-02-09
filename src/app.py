@@ -1,12 +1,13 @@
+from atproto import Client, models
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import Button, Input, Label, Header, Footer, Static
 from textual.screen import Screen
 from textual.binding import Binding
-from textual import events
 
-import httpx
-from atproto import Client, models
+from helpers import create_client
+from add import add_users_to_list, add_followers_to_list
+from remove import remove_users_from_list, remove_followers_from_list
 
 
 class User:
@@ -191,157 +192,6 @@ class listfluff(App):
     def on_mount(self) -> None:
         self.theme = "tokyo-night"
         self.push_screen(LoginScreen())
-
-
-def resolve_pds(did):
-    if did.startswith("did:plc:"):
-        r = httpx.get(f"https://plc.directory/{did}")
-        r.raise_for_status()
-    elif did.startswith("did:web"):
-        r = httpx.get(f"https://{did.lstrip("did:web")}/.well-known/did.json")
-        r.raise_for_status()
-    else:
-        raise ValueError("Invalid DID Method")
-    for service in r.json()["service"]:
-        if service["id"] == "#atproto_pds":
-            return service["serviceEndpoint"]
-
-
-def resolve_handle(user):
-    if user.startswith("did:"):
-        did = user
-    else:
-        pub = Client("https://public.api.bsky.app")
-        did = pub.resolve_handle(user).did
-
-    return did
-
-
-def create_client(user, password):
-    did = resolve_handle(user)
-    client = Client(resolve_pds(did))
-    client.login(did, password)
-    return client
-
-
-def add_users_to_list(client, users, list_uri):
-    dids = [resolve_handle(user) for user in users]
-    dids = list(set(dids))
-    add_dids_to_list(client, dids, list_uri)
-
-
-def remove_users_from_list(client, users, list_uri):
-    dids = [resolve_handle(user) for user in users]
-    dids = list(set(dids))
-    remove_dids_from_list(client, dids, list_uri)
-
-
-def add_followers_to_list(client, users, list_uri):
-    udids = [resolve_handle(user) for user in users]
-    dids = []
-    for udid in udids:
-        dids.extend(get_followers(udid))
-    dids = list(set(dids))
-    add_dids_to_list(client, dids, list_uri)
-
-
-def remove_followers_from_list(client, users, list_uri):
-    udids = [resolve_handle(user) for user in users]
-    dids = []
-    for udid in udids:
-        dids.extend(get_followers(udid))
-    dids = list(set(dids))
-    remove_dids_from_list(client, dids, list_uri)
-
-
-def add_dids_to_list(client, dids, list_uri):
-    created_at = client.get_current_time_iso()
-    list_items = [models.AppBskyGraphListitem.Record(
-                  created_at=created_at,
-                  list=list_uri,
-                  subject=did
-                  ) for did in dids]
-
-    list_of_writes = [models.com.atproto.repo.apply_writes.Create(
-                      collection="app.bsky.graph.listitem",
-                      value=list_item) for list_item in list_items]
-
-    splitty = split_list(list_of_writes, 200)
-    repo = client._session.did
-    for s in splitty:
-        client.com.atproto.repo.apply_writes(
-            data=models.com.atproto.repo.apply_writes.Data(
-                repo=repo,
-                writes=s
-            )
-        )
-
-
-def remove_dids_from_list(client, dids, list_uri):
-    records = []
-    repo = client._session.did
-    cursor = None
-    while True:
-        response = client.com.atproto.repo.list_records(
-            params=models.com.atproto.repo.list_records.Params(
-                collection="app.bsky.graph.listitem",
-                cursor=cursor,
-                repo=repo,
-                limit=100,
-            )
-        )
-
-        cursor = response.cursor
-        records.extend(response.records)
-
-        if not cursor:
-            break
-
-    set_of_dids = set(dids)
-    rkeys_to_remove = []
-    for record in records:
-        if record.value.subject in set_of_dids:
-            rkeys_to_remove.append(record.uri.split("/")[-1])
-
-    items = [models.com.atproto.repo.apply_writes.Delete(
-        collection="app.bsky.graph.listitem",
-        rkey=rkey) for rkey in rkeys_to_remove]
-
-    splitty = split_list(items, 200)
-    for s in splitty:
-        client.com.atproto.repo.apply_writes(
-            data=models.com.atproto.repo.apply_writes.Data(
-                repo=repo,
-                writes=s
-            )
-        )
-
-
-def get_followers(did):
-    cursor = None
-    dids = []
-    pub = Client("https://public.api.bsky.app")
-    while True:
-        response = pub.com.atproto.server.get_followers(
-            params=models.com.atproto.server.get_followers.Params(
-                did=did,
-                limit=100,
-                cursor=cursor,
-            )
-        )
-
-        cursor = response.cursor
-
-        dids_i = [f.did for f in response.followers]
-        dids.extend(dids_i)
-
-        if not cursor:
-            break
-    return dids
-
-
-def split_list(lst, n):
-    return [lst[i:i+n] for i in range(0, len(lst), n)]
 
 
 if __name__ == "__main__":
