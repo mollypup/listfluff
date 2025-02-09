@@ -16,19 +16,19 @@ class User:
 
 class LoginScreen(Screen):
     BINDINGS = [
-        Binding("escape", "quit", "Quit", show=True),
-        Binding("enter", "submit", "Login", show=True)
+        Binding("escape", "quit", "quit", show=True),
+        Binding("enter", "submit", "login", show=True)
     ]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Container(
-            Label("Username:"),
+            Label("username:"),
             Input(id="username", placeholder="Enter username"),
-            Label("Password:"),
+            Label("password:"),
             Input(id="password", password=True, placeholder="Enter password"),
         )
-        yield Button("Login", variant="primary", id="login-button")
+        yield Button("login", variant="primary", id="login-button")
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -50,52 +50,52 @@ class LoginScreen(Screen):
 
 class MainScreen(Screen):
     BINDINGS = [
-        Binding("escape", "quit", "Quit", show=True),
-        Binding("ctrl+b", "back", "Back to Login", show=True)
+        Binding("escape", "quit", "quit", show=True),
+        Binding("ctrl+b", "back", "back to login", show=True)
     ]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Container(
-            Label("User Management", classes="title"),
+            Label("list spam !", classes="title"),
             Horizontal(
                 Container(
-                    Label("Add Users:"),
+                    Label("add users:"),
                     Input(id="add-users", placeholder="user1,user2,user3"),
-                    Label("List URI:"),
+                    Label("list uri:"),
                     Input(
                         id="list-uri", placeholder="https://bsky.app/profile/user1.bsky.social/lists/list1"),
-                    Button("Add Users", variant="primary", id="add-users-btn"),
+                    Button("add users", variant="primary", id="add-users-btn"),
                 ),
                 Container(
-                    Label("Remove Users:"),
+                    Label("remove users:"),
                     Input(id="remove-users", placeholder="user1,user2,user3"),
-                    Label("List URI:"),
+                    Label("list uri:"),
                     Input(
                         id="list-uri", placeholder="https://bsky.app/profile/user1.bsky.social/lists/list1"),
-                    Button("Remove Users", variant="primary",
+                    Button("remove users", variant="primary",
                            id="remove-users-btn"),
                 ),
             ),
             Horizontal(
                 Container(
-                    Label("Add Followers of User:"),
+                    Label("add followers of users:"),
                     Input(id="add-followers",
                           placeholder="target_user1,target_user2,target_user3"),
-                    Label("List URI:"),
+                    Label("list uri:"),
                     Input(
                         id="list-uri", placeholder="https://bsky.app/profile/user1.bsky.social/lists/list1"),
-                    Button("Add Followers", variant="primary",
+                    Button("add followers", variant="primary",
                            id="add-followers-btn"),
                 ),
                 Container(
-                    Label("Remove Followers of User:"),
+                    Label("remove followers of users:"),
                     Input(id="remove-followers",
                           placeholder="target_user1,target_user2,target_user3"),
-                    Label("List URI:"),
+                    Label("list uri:"),
                     Input(
                         id="list-uri", placeholder="https://bsky.app/profile/user1.bsky.social/lists/list1"),
-                    Button("Remove Followers", variant="primary",
+                    Button("remove followers", variant="primary",
                            id="remove-followers-btn"),
                 ),
             ),
@@ -110,39 +110,39 @@ class MainScreen(Screen):
             users = self.query_one("#add-users").value
             list_uri = self.query_one("#list-uri").value
             if users:
-                status.update(f"Adding users: {users}")
+                status.update(f"adding users: {users}")
                 add_users_to_list(self.app.client, users.split(','), list_uri)
-                status.update(f"Added users: {users}")
+                status.update(f"added users: {users}")
         elif event.button.id == "remove-users-btn":
             users = self.query_one("#remove-users").value
             list_uri = self.query_one("#list-uri").value
             if users:
-                status.update(f"Removing users: {users}")
+                status.update(f"removing users: {users}")
                 remove_users_from_list(
                     self.app.client, users.split(','), list_uri)
-                status.update(f"Removed users: {users}")
+                status.update(f"removed users: {users}")
         elif event.button.id == "add-followers-btn":
             users = self.query_one("#add-followers").value
             list_uri = self.query_one("#list-uri").value
             if users:
-                status.update(f"Adding followers of: {users}")
+                status.update(f"adding followers of: {users}")
                 add_followers_to_list(
                     self.app.client, users.split(','), list_uri)
-                status.update(f"Added followers of: {users}")
+                status.update(f"added followers of: {users}")
         elif event.button.id == "remove-followers-btn":
             users = self.query_one("#remove-followers").value
             list_uri = self.query_one("#list-uri").value
             if users:
-                status.update(f"Removing followers of: {users}")
+                status.update(f"removing followers of: {users}")
                 remove_followers_from_list(
                     self.app.client, users.split(','), list_uri)
-                status.update(f"Removed followers of: {users}")
+                status.update(f"removed followers of: {users}")
 
     def action_back(self) -> None:
         self.app.pop_screen()
 
 
-class ListManagerTUI(App):
+class listfluff(App):
     CSS = """
     Screen {
         align: center middle;
@@ -151,6 +151,11 @@ class ListManagerTUI(App):
     .title {
         text-align: center;
         margin: 1 0;
+        text-style: bold;
+    }
+    
+    .label-bold {
+        text-style: bold;
     }
 
     #login-container {
@@ -184,6 +189,7 @@ class ListManagerTUI(App):
         self.client = None
 
     def on_mount(self) -> None:
+        self.theme = "tokyo-night"
         self.push_screen(LoginScreen())
 
 
@@ -339,5 +345,5 @@ def split_list(lst, n):
 
 
 if __name__ == "__main__":
-    app = ListManagerTUI()
+    app = listfluff()
     app.run()
