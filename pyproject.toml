@@ -1,0 +1,31 @@
+[build-system]
+requires = [
+	"setuptools>=61.0", "setuptools_scm>=8"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "listfluff"
+description = "atproto listfluffer" 
+authors = [
+	{name = "molly", email = "bunnyl0v3rr@proton.me"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+	"atproto",
+	"httpx",
+	"textual >= 1.0.0"
+]
+
+[project.urls] 
+"Homepage" = "https://github.com/mollypup/listfluff"
+"Issues" = "https://github.com/mollypup/listfluff/issues"
+
+[project.scripts]
+listfluff = "listfluff.app:main" 
