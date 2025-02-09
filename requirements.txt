@@ -1,3 +1,0 @@
-atproto == 0.0.58
-httpx == 0.27.2
-textual == 1.0.0
